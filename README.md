@@ -6,12 +6,12 @@ This project is to create agents to do market research on the US Economy.  It wi
 
 # AI Agent Team!
 - Market Researcher:  It will review news articles related on econmics industries listed below and collect information on each industry:
-    -Healthcare
-    -Investments
-    -Technology
-    -Finance
-    -Construction
-    -Real Estate
+  - Healthcare
+  - Investments
+  - Technology
+  - Finance
+  - Construction
+  - Real Estate
 - Economist:  It will take the results from these news articles and provide economic context what might cause these issues or why its an issue in the economy
 - Evaluator:  It will provide information on the industry and review economic textbooks to resolve these issues at a high level
 
