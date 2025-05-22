@@ -1,5 +1,5 @@
 # AI Agents for Economic Market Analysis
-This project is to create agents to do market research on the US Economy.  It will review Consumers, Government, Investments, and Net Exports
+This project is to create agents to do market research on the US Economy.
 
 # Hompage View
 ![Model](https://github.com/kvongrassamy/EconMarketAnalysisAI/blob/master/image/EconHomePage.PNG)
