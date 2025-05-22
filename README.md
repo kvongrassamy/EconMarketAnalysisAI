@@ -2,7 +2,7 @@
 This project is to create agents to do market research on the US Economy.  It will review Consumers, Government, Investments, and Net Exports
 
 # Hompage View
-![Model](https://github.com/kvongrassamy/EconMarketAnalysisAI/blob/main/image/EconHomePage.PNG)
+![Model](https://github.com/kvongrassamy/EconMarketAnalysisAI/blob/master/image/EconHomePage.PNG)
 
 # AI Agent Team!
 - Market Researcher:  It will review news articles related on econmics industries listed below and collect information on each industry:
