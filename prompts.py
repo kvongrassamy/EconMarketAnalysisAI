@@ -1,6 +1,13 @@
 MARKET_RESEARCH_PROMPTS = {
-    'prices': "Research price increases and decreases at the macro level",
-    #'income': "Review increase, decrease, or stagnant income in the united states",
+    'prices': """Research price increases and decreases""",
+    'unemployment': """Review the labor market and see job demand, job layoffs, and job growth especially in the following sectors below:
+    - healthcare
+    - investments
+    - tech
+    - finance
+    - construction
+    - real estate
+    """,
     'savings': "Research savings and credit card debt to see if there are economic impact",
     #'policy': "Research government policies passed",
     'healthcare': "Research Healthcare spending and other healthcare economic issues",
@@ -15,5 +22,8 @@ MARKET_RESEARCH_PROMPTS = {
     'construction': """Research Construction which includes residential and nonresidential builders, 
                         contractors, and civil engineers""",
     'real estate': 'Research the real estate market and see if its good to buy, sell, prices, and anything else related to reale state',
-    'economics': "Research any news related to economics today"
+    'economics': "Research any news related to economics today",
+    'Supply and demand': "Research supply and demand on goods and services",
+    'Production': "Research increases, decreases, or stagnant production on goods and services",
+    'Consumer': "Reseach current consumer behaviour if there are increase or decreases in spending or savings"
 }

@@ -1,7 +1,7 @@
 import openai
 from typing import Literal
 from typing_extensions import TypedDict
-
+from datetime import datetime
 from langchain_core.tools import tool, BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import MessagesState, END
@@ -19,7 +19,7 @@ import os
 
 
 
-members = ["economist_agent", "evaluator_agent"]
+members = ["economist_agent", "evaluator_agent", "blogpost_agent"]
 # Our team supervisor is an LLM node. It just picks the next agent to process
 # and decides when the work is completed
 options = members + ["FINISH"]
@@ -27,7 +27,7 @@ options = members + ["FINISH"]
 system_prompt = (
     "You are a supervisor tasked with managing a conversation between the"
     f" following workers: {members}. Given the following user request,"
-    " respond with the worker to act next. Each worker will perform a"
+    " respond with the worker to act next and if the worker is still reviewing documenation, wait for their completion. Each worker will perform a"
     " task and respond with their results and status. When finished,"
     " respond with FINISH."
 )
@@ -39,8 +39,8 @@ class Router(TypedDict):
     next: Literal[*options]
 
 
-llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo", max_tokens=4096)
-#llm = ChatOpenAI(temperature=0, model="gpt-4o-2024-11-20", max_tokens=4096)
+#llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo", max_tokens=4096)
+llm = ChatOpenAI(temperature=0, model="gpt-4.1-2025-04-14", max_tokens=4096)
 #llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
 
 
@@ -61,6 +61,8 @@ def supervisor_node(state: State) -> Command[Literal[*members, "__end__"]]:
 
 
 def __init_marketresearch__():
+    now = datetime.now().date()
+    #llm = ChatOpenAI(temperature=0, model="gpt-4.1-2025-04-14", max_tokens=4096, model_kwargs={"truncation": "auto"})
     marketresearch_agent = create_react_agent(
         llm, tools=[tavily_search_tool, format_and_store], 
         state_modifier="""
@@ -80,7 +82,7 @@ def __init_marketresearch__():
     for message in MARKET_RESEARCH_PROMPTS:
         prompt = MARKET_RESEARCH_PROMPTS[message]
         for s in marketresearch_agent.stream(
-            {"messages": [("user", f"""{prompt}.  Please use current news articles to 
+            {"messages": [("user", f"""{prompt}.  Please use current news articles in the last 30 days before {now} to 
                         conclude the current state of the economy and write your final messages to output.txt using format_and_store tool
                         """)]}, subgraphs=True
             ):
@@ -92,9 +94,21 @@ def __init_marketresearch__():
 
 economist_agent = create_react_agent(llm, tools=[directory_reader, pdf_reader],
                                  state_modifier="""
-First you will need to read the output.txt file which you can use the directory_reader tool.
-Next, review the PDF textbook using the pdf_reader tool to provide additional information on topics provided by directory_reader.
-                                                    """)
+You are a adavanced economic analyst and you will do the following below:
+- Researches, compiles, analyzes, interprets, and prepares data on economic conditions in the output.txt file which you can use the directory_reader tool.
+- Reviews and analyzes economic data to prepare reports detailing results of performedresearch.
+- Review the pdf_reader tool to read the textbook for determining and analyzing occupational employment statistics, wage information, labor supply and demand, tax revenues, agriculture production, and insurance and utility rate structures.
+- Identifies economic indicators in respect to trends of the national and local economies.
+- Identify keywords in the output.txt to see if there are any correlations to other keywords in the text
+- Assesses economic impact of tax laws and proposals, and makes projections of anticipated revenue collection.
+- Evaluates rate structures, cost of money, rates of return, and other economic parameters of the insurance and utility industries.
+- The PDF textbook using the pdf_reader tool may help provide context to the above bullet points
+"""
+#                                  """
+# First you will need to read the output.txt file which you can use the directory_reader tool.
+# Next, review the PDF textbook using the pdf_reader tool to provide additional information on topics provided by directory_reader.
+#                                                     """
+                                                    )
 
 
 def economist_agent_node(state: State) -> Command[Literal["supervisor"]]:
@@ -110,15 +124,16 @@ def economist_agent_node(state: State) -> Command[Literal["supervisor"]]:
 
 evaluator_agent = create_react_agent(llm, tools=[textbook_reader],
                                  state_modifier="""
+You are an elite-level researcher and evaluator expert and copywriter capable of producing highly optimized, detailed, and comprehensive content that is received from the economist_agent
 First, review the message you receive from economist_agent_node and identify if it mentions the following categories, healthcare, investments, technology, finance, construction, and real estate.
 Next you will need to pass the tool a list for the path_list variable if the message from the economist_agent is in one of the categories.
 The paths for each category is below:
 Healthcare = CategoryTextbooks/The-Economics-of-Health-and-Health-Care.pdf
-Real Estate = CategoryTextbooks/Book_ECON.pdf
-Construction = CategoryTextbooks/ConstructionTextbook.pdf
+Real Estate = CategoryTextbooks/Real-Estate-Economics-Realty-Almanac-2022-2024.pdf
+Construction = CategoryTextbooks/Principles-of-Basic-Construction-Economics-in-the-21st-Century.pdf
 Finance = CategoryTextbooks/PrinciplesofFinance-WEB.pdf
-Technology = CategoryTextbooks/TechEconTextbook.pdf
-Investments = CategoryTextbooks/InvestmentTextbook.pdf
+Technology = CategoryTextbooks/Economics-of-Technology.pdf
+Investments = CategoryTextbooks/Economics-for-Investment-Decision-Makers.pdf
 
 Provide a comprehensive and be descriptive on what message you receive and what is found in the textbooks.  
 Also provide as much information as possible that you find and if there are multiple categories in the question, have the category as the title then provide your explaination.
@@ -129,6 +144,7 @@ Once the textbooks have been reviewed you will do the following below:
 - I want atleast 2 or 3 sentences from the textbook related to the keyword. 
 - Then, to the best of your ability answer the question if you know anything else.
 - Make sure to distinguish what you got from the textbook or what you get from the message provided
+- Your task is to create a long-form, highly valuable economic context in fluent and professional English. 
                                                     """)
 
 
@@ -143,11 +159,34 @@ def evaluator_node(state: State) -> Command[Literal["supervisor"]]:
         goto="supervisor",
     )
 
+
+blogpost_agent = create_react_agent(llm, tools=[textbook_reader],
+                                 state_modifier="""
+You are an elite-level SEO expert and copywriter capable of producing highly optimized, detailed, and comprehensive content that is received from the economist_agent and evaluator_agent. 
+Your task is to create a long-form, highly valuable article in fluent and professional English. 
+The article must directly compete with, and aim to outrank, an existing webpage provided by the user. 
+Assume that the content alone will determine the ranking—focus on maximum quality, depth, structure, and keyword optimization to ensure top search performance.
+                                                    """)
+
+
+def blogpost_node(state: State) -> Command[Literal["supervisor"]]:
+    result = blogpost_agent.invoke(state)
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(content=result["messages"][-1].content, name="blogpost_agent")
+            ]
+        },
+        goto="supervisor",
+    )
+
+
 builder = StateGraph(State)
 builder.add_edge(START, "supervisor")
 builder.add_node("supervisor", supervisor_node)
 builder.add_node("economist_agent", economist_agent_node)
 builder.add_node("evaluator_agent", evaluator_node)
+builder.add_node("blogpost_agent", blogpost_node)
 graph = builder.compile()
 
 

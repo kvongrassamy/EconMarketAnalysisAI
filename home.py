@@ -9,13 +9,7 @@ def init_session_state():
     init_chat()
 
 def main():
-    #Turn off if you need to save on tavily tokens
-    
-    if 'initialized' not in st.session_state or not st.session_state.initialized:
-        __init_marketresearch__()
-        st.session_state.initialized = True  # Mark initialization as done to avoid re-running
-    else:
-        st.write("Market Research complete!")
+
     with st.sidebar:
         st.title("Promt Current Econ Questions")
         st.write("Welcome to your team of AI Agents to do market research and analysis")
@@ -45,6 +39,15 @@ def main():
         st.write("""
         - 📈 Economics
         """)
+
+        st.write("""
+                Press to get updated market information
+        """)
+
+        if st.button("Initialize Market Research", use_container_width=True):
+            st.write("Collecting current market news...")
+            __init_marketresearch__()
+            st.write("Market research is complete!")
     
     # Show chat interface
     

@@ -10,7 +10,7 @@ def generate_response(input_text):
             print(s)
             if list(s[1].values())[0]['next'] != '__end__':
                 st.write(f"""SUPERVISOR: Reviewing prompt with AI Agents...""".format())
-        elif list(s[1])[0] in ["economist_agent", "evaluator_agent"]:
+        elif list(s[1])[0] in ["economist_agent", "evaluator_agent", "blogpost_agent"]:
             ai_msg = list(s[1].values())[0]['messages'][0].content
             ai_name = list(s[1])[0].replace("_", " ")
             st.write(f"""{ai_name.upper()}:\n {ai_msg}""")
