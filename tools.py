@@ -33,9 +33,11 @@ os.environ["TAVILY_API_KEY"] = os.environ.get("TAVILY_API_KEY")
 tavily_search_tool = TavilySearch(
     max_result = 6,
     topic = 'news',
-    include_answer = True,
-    search_depth = 'advanced'
+    include_answer = "advanced",#True,
+    search_depth = 'advanced',
+    time_range = 'month'
 )
+
 
 @tool
 def format_and_store(word: str) -> str:
@@ -62,13 +64,13 @@ def directory_reader(word: str) -> str:
     return data
 
 @tool
-def pdf_reader(word: str) -> str:
+def pdf_reader(word: str, pdf_path) -> str:
     """
     This tool is to provide suggestion, recommendations, or information on the current state of the economy provided in output.txt
     """
 
-    pdf = "EconText/DLS1.pdf"
-    loader = PyPDFLoader(pdf).load()
+    #pdf = "EconText/DLS1.pdf"
+    loader = PyPDFLoader(pdf_path).load()
     embeddings = OpenAIEmbeddings()
     vectorstore = FAISS.from_documents(loader, embeddings)
     retriever = vectorstore.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.7})
@@ -167,7 +169,7 @@ async def collapse_summaries(state: OverallState):
     return {"collapsed_summaries": results}
 
 
-graph.add_node("collapse_summaries", collapse_summaries)
+#graph.add_node("collapse_summaries", collapse_summaries)
 
 
 def should_collapse(
@@ -182,8 +184,9 @@ def should_collapse(
 
 graph.add_conditional_edges(START, map_summaries, ["generate_summary"])
 graph.add_edge("generate_summary", "collect_summaries")
-graph.add_conditional_edges("collect_summaries", should_collapse)
-graph.add_conditional_edges("collapse_summaries", should_collapse)
+graph.add_edge("collect_summaries", "generate_final_summary")
+#graph.add_conditional_edges("collect_summaries", should_collapse)
+#graph.add_conditional_edges("collapse_summaries", should_collapse)
 graph.add_edge("generate_final_summary", END)
 app = graph.compile()
 
@@ -207,9 +210,9 @@ async def textbook_review(word: str, path_list: List) -> str:
             if 'generate_final_summary' not in list(step.keys()):
                 continue
             else:
-                summaries.append(step['generate_final_summary']['final_summary'])
+                await summaries.append(step['generate_final_summary']['final_summary'])
 
-    summaries = "  ".join(summaries)
+    #summaries = "  ".join(summaries)
     return summaries
 
 textbook_reader = StructuredTool.from_function( func=textbook_review)

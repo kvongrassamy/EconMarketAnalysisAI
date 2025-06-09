@@ -19,7 +19,7 @@ import os
 
 
 
-members = ["economist_agent", "evaluator_agent", "blogpost_agent"]
+members = ["economist_agent", "micro_economist_agent", "evaluator_agent", "blogpost_agent"]
 # Our team supervisor is an LLM node. It just picks the next agent to process
 # and decides when the work is completed
 options = members + ["FINISH"]
@@ -92,17 +92,30 @@ def __init_marketresearch__():
 
 
 
-economist_agent = create_react_agent(llm, tools=[directory_reader, pdf_reader],
+economist_agent = create_react_agent(llm, tools=[directory_reader, textbook_reader],
                                  state_modifier="""
 You are a adavanced economic analyst and you will do the following below:
 - Researches, compiles, analyzes, interprets, and prepares data on economic conditions in the output.txt file which you can use the directory_reader tool.
 - Reviews and analyzes economic data to prepare reports detailing results of performedresearch.
-- Review the pdf_reader tool to read the textbook for determining and analyzing occupational employment statistics, wage information, labor supply and demand, tax revenues, agriculture production, and insurance and utility rate structures.
+- Review the textbook_reader tool to read the textbook for determining and analyzing occupational employment statistics, wage information, labor supply and demand, tax revenues, agriculture production, and insurance and utility rate structures.
 - Identifies economic indicators in respect to trends of the national and local economies.
 - Identify keywords in the output.txt to see if there are any correlations to other keywords in the text
 - Assesses economic impact of tax laws and proposals, and makes projections of anticipated revenue collection.
 - Evaluates rate structures, cost of money, rates of return, and other economic parameters of the insurance and utility industries.
-- The PDF textbook using the pdf_reader tool may help provide context to the above bullet points
+- The PDF textbook using the textbook_reader tool may help provide context to the above bullet points
+
+path to pass to the textbook_reader tool is EconText/Macroeconomics3e-WEB_X69daYk.pdf
+Using the textbook_reader tool is required to answer the prompt correctly in the "-" bullet points above
+Provide a comprehensive and be descriptive on what message you receive and what is found in the textbooks.  
+Also provide as much information as possible that you find and if there are multiple categories in the question, have the category as the title then provide your explaination.
+Once the textbooks have been reviewed you will do the following below:
+- Find key phrases in the question and relate it to the textbook then provide context from the textbook and solutions to economic issues. Examples Provided below:
+        - Asymmetrical information could be solved by intermediaries or rating agencies such as Moody's and Standard & Poor's informing market participants about securities risk. 
+        - If businesses hire too few low-skilled workers after a minimum wage increase, the government can create exceptions for less-skilled workers. Governments can also impose taxes and subsidies as possible solutions. Subsidies can help encourage behavior that can result in positive externalities. Meanwhile, taxation can help cut down negative behavior. For example, placing a tax on tobacco can increase the cost of consumption, therefore making it more expensive for people to smoke.
+- I want atleast 2 or 3 sentences from the textbook related to the keyword. 
+- Then, to the best of your ability answer the question if you know anything else.
+- Make sure to distinguish what you got from the textbook or what you get from the message provided
+- Your task is to create a long-form, highly valuable economic context in fluent and professional English.
 """
 #                                  """
 # First you will need to read the output.txt file which you can use the directory_reader tool.
@@ -122,11 +135,54 @@ def economist_agent_node(state: State) -> Command[Literal["supervisor"]]:
         goto="supervisor",
     )
 
+micro_economist_agent = create_react_agent(llm, tools=[directory_reader, textbook_reader],
+                                 state_modifier="""
+You are a adavanced economic analyst that specializes in microeconomics and you will do the following below:
+- Researches, compiles, analyzes, interprets, and prepares data on economic conditions in the output.txt file which you can use the directory_reader tool.
+- Reviews and analyzes economic data to prepare reports detailing results of performedresearch.
+- Review the textbook_reader tool to read the textbook for determining and analyzing occupational employment statistics, wage information, labor supply and demand, tax revenues, agriculture production, and insurance and utility rate structures.
+- Identifies economic indicators in respect to trends of the national and local economies.
+- Identify keywords in the output.txt to see if there are any correlations to other keywords in the text
+- Assesses economic impact of tax laws and proposals, and makes projections of anticipated revenue collection.
+- Evaluates rate structures, cost of money, rates of return, and other economic parameters of the insurance and utility industries.
+- The PDF textbook using the textbook_reader tool may help provide context to the above bullet points
+
+path to pass to the textbook_reader tool is EconText/Microeconomics.pdf
+Using the textbook_reader tool is required to answer the prompt correctly in the "-" bullet points above
+Provide a comprehensive and be descriptive on what message you receive and what is found in the textbooks.  
+Also provide as much information as possible that you find and if there are multiple categories in the question, have the category as the title then provide your explaination.
+Once the textbooks have been reviewed you will do the following below:
+- Find key phrases in the question and relate it to the textbook then provide context from the textbook and solutions to economic issues. Examples Provided below:
+        - Asymmetrical information could be solved by intermediaries or rating agencies such as Moody's and Standard & Poor's informing market participants about securities risk. 
+        - If businesses hire too few low-skilled workers after a minimum wage increase, the government can create exceptions for less-skilled workers. Governments can also impose taxes and subsidies as possible solutions. Subsidies can help encourage behavior that can result in positive externalities. Meanwhile, taxation can help cut down negative behavior. For example, placing a tax on tobacco can increase the cost of consumption, therefore making it more expensive for people to smoke.
+- I want atleast 2 or 3 sentences from the textbook related to the keyword. 
+- Then, to the best of your ability answer the question if you know anything else.
+- Make sure to distinguish what you got from the textbook or what you get from the message provided
+- Your task is to create a long-form, highly valuable economic context in fluent and professional English.
+"""
+#                                  """
+# First you will need to read the output.txt file which you can use the directory_reader tool.
+# Next, review the PDF textbook using the pdf_reader tool to provide additional information on topics provided by directory_reader.
+#                                                     """
+                                                    )
+
+
+def micro_economist_agent_node(state: State) -> Command[Literal["supervisor"]]:
+    result = economist_agent.invoke(state)
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(content=result["messages"][-1].content, name="micro_economist_agent")
+            ]
+        },
+        goto="supervisor",
+    )
+
 evaluator_agent = create_react_agent(llm, tools=[textbook_reader],
                                  state_modifier="""
 You are an elite-level researcher and evaluator expert and copywriter capable of producing highly optimized, detailed, and comprehensive content that is received from the economist_agent
-First, review the message you receive from economist_agent_node and identify if it mentions the following categories, healthcare, investments, technology, finance, construction, and real estate.
-Next you will need to pass the tool a list for the path_list variable if the message from the economist_agent is in one of the categories.
+First, review the message you receive from economist_agent_node and micro_economist_agent_node and identify if it mentions the following categories, healthcare, investments, technology, finance, construction, and real estate.
+Next you will need to pass the tool a list for the path_list variable if the message from the economist_agent and micro_economist_agent is in one of the categories.
 The paths for each category is below:
 Healthcare = CategoryTextbooks/The-Economics-of-Health-and-Health-Care.pdf
 Real Estate = CategoryTextbooks/Real-Estate-Economics-Realty-Almanac-2022-2024.pdf
@@ -185,6 +241,7 @@ builder = StateGraph(State)
 builder.add_edge(START, "supervisor")
 builder.add_node("supervisor", supervisor_node)
 builder.add_node("economist_agent", economist_agent_node)
+builder.add_node("micro_economist_agent", micro_economist_agent_node)
 builder.add_node("evaluator_agent", evaluator_node)
 builder.add_node("blogpost_agent", blogpost_node)
 graph = builder.compile()
